@@ -139,6 +139,10 @@ func (cli *Client) Dial(network, addr string) (Conn, error) {
 }
 
 func (cli *Client) Enroll(nc net.Conn) (gc Conn, err error) {
+	return cli.EnrollWithContext(nc, nil)
+}
+
+func (cli *Client) EnrollWithContext(nc net.Conn, ctx interface{}) (gc Conn, err error) {
 	switch v := nc.(type) {
 	case *net.TCPConn:
 		if cli.opts.TCPNoDelay == TCPNoDelay {
@@ -156,6 +160,7 @@ func (cli *Client) Enroll(nc net.Conn) (gc Conn, err error) {
 		}
 
 		c := newTCPConn(nc, cli.el)
+		c.ctx = ctx
 		cli.el.ch <- c
 		go func(c *conn, tc net.Conn, el *eventloop) {
 			var buffer [0x10000]byte
@@ -171,6 +176,7 @@ func (cli *Client) Enroll(nc net.Conn) (gc Conn, err error) {
 		gc = c
 	case *net.UnixConn:
 		c := newTCPConn(nc, cli.el)
+		c.ctx = ctx
 		cli.el.ch <- c
 		go func(c *conn, uc net.Conn, el *eventloop) {
 			var buffer [0x10000]byte
@@ -192,6 +198,7 @@ func (cli *Client) Enroll(nc net.Conn) (gc Conn, err error) {
 		gc = c
 	case *net.UDPConn:
 		c := newUDPConn(cli.el, nc.LocalAddr(), nc.RemoteAddr())
+		c.ctx = ctx
 		c.rawConn = nc
 		go func(uc net.Conn, el *eventloop) {
 			var buffer [0x10000]byte

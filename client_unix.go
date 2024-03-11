@@ -149,6 +149,10 @@ func (cli *Client) Dial(network, address string) (Conn, error) {
 
 // Enroll converts a net.Conn to gnet.Conn and then adds it into Client.
 func (cli *Client) Enroll(c net.Conn) (Conn, error) {
+	return cli.EnrollWithContext(c, nil)
+}
+
+func (cli *Client) EnrollWithContext(c net.Conn, ctx interface{}) (Conn, error) {
 	defer c.Close()
 
 	sc, ok := c.(syscall.Conn)
@@ -217,6 +221,7 @@ func (cli *Client) Enroll(c net.Conn) (Conn, error) {
 	default:
 		return nil, errorx.ErrUnsupportedProtocol
 	}
+	gc.SetContext(ctx)
 	err = cli.el.poller.UrgentTrigger(cli.el.register, gc)
 	if err != nil {
 		gc.Close()
